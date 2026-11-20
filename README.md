@@ -28,13 +28,16 @@ Exemplos de caminho:
 Se aparecer `OK`, está pronto. O script confere se todas as 224 chaves estão no lugar e se a
 formatação do arquivo foi preservada.
 
-### Acentos aparecendo como quadrado?
+### Por que "nao" e "Opçoes" sem til?
 
-As fontes do jogo não têm `ã` nem `õ`. Se aparecerem quadrados, rode o mesmo comando com
-`alt` no final. Essa versão troca `ã`→`a` e `õ`→`o`:
+A fonte do jogo fica dentro do `data.win` e não tem as letras `ã` e `õ`: o jogo simplesmente
+some com elas ("NÃO" vira "NO"). Por isso o script troca `ã`→`a` e `õ`→`o`. Os outros acentos
+(á, é, ó, ç, ê…) aparecem normalmente.
+
+Se um dia a fonte ganhar essas letras, dá pra gerar a versão com til:
 
 ```bash
-python3 apply.py "CAMINHO/DO/JOGO/languages.json.bak" "CAMINHO/DO/JOGO/languages.json" alt
+python3 apply.py "CAMINHO/DO/JOGO/languages.json.bak" "CAMINHO/DO/JOGO/languages.json" com-til
 ```
 
 ### Desinstalar

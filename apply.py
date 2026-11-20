@@ -1,11 +1,12 @@
-# usage: python3 -I apply.py <original languages.json> <out.json> [alt]
+# usage: python3 -I apply.py <original languages.json> <out.json> [com-til]
 # Replaces only the value spans of the "en" block; every other byte is copied as-is.
 import re, sys, json, os
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from pt import PT
 
 src, dst = sys.argv[1], sys.argv[2]
-ALT = str.maketrans("ãõÃÕ", "aoAO") if len(sys.argv) > 3 else None
+# the game's pixel font has no ã/õ glyphs (they render as nothing), so swap them by default
+ALT = None if sys.argv[3:] == ["com-til"] else str.maketrans("ãõÃÕ", "aoAO")
 raw = open(src, 'rb').read().decode('utf-8')
 orig = json.loads(raw, strict=False)
 en = orig['en']
