@@ -17,7 +17,12 @@ BASE = {'ã': 'â', 'õ': 'ô', 'Ã': 'Â', 'Õ': 'Ô'}      # letra do jogo usa
 FONTS = ('Font_Mio_2', 'Font_Author')
 
 
-# ---------- texturas do GameMaker: QOI (rascunho antigo) dentro de bzip2 ----------
+# ---------- texturas do GameMaker: variante de QOI dentro de bzip2 ----------
+# Segue o QoiConverter do UndertaleModTool: as diferenças de cor são em complemento de dois.
+def sx(v, bits):  # inteiro com sinal de `bits` bits
+    return v - (1 << bits) if v & (1 << (bits - 1)) else v
+
+
 def qoi_decode(s):
     assert s[:4] == b'fioq'
     w, h, n = struct.unpack_from('<HHI', s, 4)
@@ -33,14 +38,14 @@ def qoi_decode(s):
             elif (b1 & 0xe0) == 0x40: run = b1 & 0x1f
             elif (b1 & 0xe0) == 0x60: run = ((b1 & 0x1f) << 8 | s[p]) + 32; p += 1
             elif (b1 & 0xc0) == 0x80:
-                r = (r + ((b1 >> 4) & 3) - 2) & 255; g = (g + ((b1 >> 2) & 3) - 2) & 255; b = (b + (b1 & 3) - 2) & 255
+                r = (r + sx((b1 >> 4) & 3, 2)) & 255; g = (g + sx((b1 >> 2) & 3, 2)) & 255; b = (b + sx(b1 & 3, 2)) & 255
             elif (b1 & 0xe0) == 0xc0:
                 b2 = s[p]; p += 1
-                r = (r + (b1 & 0x1f) - 16) & 255; g = (g + (b2 >> 4) - 8) & 255; b = (b + (b2 & 15) - 8) & 255
+                r = (r + sx(b1 & 31, 5)) & 255; g = (g + sx(b2 >> 4, 4)) & 255; b = (b + sx(b2 & 15, 4)) & 255
             elif (b1 & 0xf0) == 0xe0:
-                b2, b3 = s[p], s[p + 1]; p += 2
-                r = (r + (((b1 & 15) << 1) | (b2 >> 7)) - 16) & 255; g = (g + ((b2 & 0x7c) >> 2) - 16) & 255
-                b = (b + (((b2 & 3) << 3) | ((b3 & 0xe0) >> 5)) - 16) & 255; a = (a + (b3 & 31) - 16) & 255
+                m = b1 << 16 | s[p] << 8 | s[p + 1]; p += 2
+                r = (r + sx((m >> 15) & 31, 5)) & 255; g = (g + sx((m >> 10) & 31, 5)) & 255
+                b = (b + sx((m >> 5) & 31, 5)) & 255; a = (a + sx(m & 31, 5)) & 255
             else:
                 if b1 & 8: r = s[p]; p += 1
                 if b1 & 4: g = s[p]; p += 1
@@ -82,13 +87,13 @@ def qoi_encode(px):
             vr, vg, vb, va = r - pr, g - pg, b - pb, a - pa
             if -17 < vr < 16 and -17 < vg < 16 and -17 < vb < 16 and -17 < va < 16:
                 if va == 0 and -3 < vr < 2 and -3 < vg < 2 and -3 < vb < 2:
-                    o.append(0x80 | ((vr + 2) << 4) | ((vg + 2) << 2) | (vb + 2))
+                    o.append(0x80 | (vr << 4 & 48) | (vg << 2 & 12) | (vb & 3))
                 elif va == 0 and -9 < vg < 8 and -9 < vb < 8:
-                    o.append(0xc0 | (vr + 16)); o.append(((vg + 8) << 4) | (vb + 8))
+                    o.append(0xc0 | (vr & 31)); o.append((vg << 4 & 240) | (vb & 15))
                 else:
-                    o.append(0xe0 | ((vr + 16) >> 1))
-                    o.append((((vr + 16) << 7) & 0x80) | ((vg + 16) << 2) | ((vb + 16) >> 3))
-                    o.append((((vb + 16) << 5) & 0xe0) | (va + 16))
+                    o.append(0xe0 | (vr >> 1 & 15))
+                    o.append((vr << 7 & 128) | (vg << 2 & 124) | (vb >> 3 & 3))
+                    o.append((vb << 5 & 224) | (va & 31))
             else:
                 o.append(0xf0 | (8 if vr else 0) | (4 if vg else 0) | (2 if vb else 0) | (1 if va else 0))
                 if vr: o.append(r)
